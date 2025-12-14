@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/chromedp/kb"
 
 	//"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
@@ -77,7 +78,7 @@ func scrollAndRead(parentCtx context.Context) ([]string, error) {
 		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			var prevHeight int64 = -1
+			var prevHeight int64 = -99
 			var currentHeight int64
 			var html string
 
@@ -97,10 +98,9 @@ func scrollAndRead(parentCtx context.Context) ([]string, error) {
 				if err := chromedp.OuterHTML("html", &html).Do(ctx); err != nil {
 					log.Printf("Błąd odczytu HTML: %v", err)
 				} else {
-					// 3. Parsowanie (Twoja funkcja logiczna)
 					collected, err := getUrlsFromContent(html)
 					if err == nil {
-						urls = append(urls, collected...) // Dodajemy do zmiennej z zewnętrznego zasięgu
+						urls = append(urls, collected...)
 						log.Printf("Iteracja %d: Znaleziono %d linków (razem: %d)", i, len(collected), len(urls))
 					}
 				}
@@ -108,13 +108,22 @@ func scrollAndRead(parentCtx context.Context) ([]string, error) {
 				prevHeight = currentHeight
 				log.Printf("Scrollowanie do: %d", currentHeight)
 
-				scrollScript := fmt.Sprintf(`window.scrollTo(0, %d);`, currentHeight)
-				if err := chromedp.Evaluate(scrollScript, nil).Do(ctx); err != nil {
-					return fmt.Errorf("błąd scrollowania: %w", err)
+				randomDelay := rand.Intn(maxTimeMs-minTimeMs) + minTimeMs
+				err = chromedp.Sleep(time.Duration(randomDelay) * time.Millisecond).Do(ctx)
+				if err != nil {
+					return err
 				}
 
-				randomDelay := rand.Intn(maxTimeMs-minTimeMs) + minTimeMs
-				time.Sleep(time.Duration(randomDelay))
+				err = chromedp.KeyEvent(kb.End).Do(ctx)
+				if err != nil {
+					return err
+				}
+
+				randomDelay = rand.Intn(maxTimeMs-minTimeMs) + minTimeMs
+				err = chromedp.Sleep(time.Duration(randomDelay) * time.Millisecond).Do(ctx)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		}),
