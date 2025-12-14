@@ -115,6 +115,7 @@ func scrollAndRead(parentCtx context.Context) ([]string, error) {
 				}
 
 				err = chromedp.KeyEvent(kb.End).Do(ctx)
+				//err = chromedp.Evaluate(`window.scrollTo(0, 100)`, nil).Do(ctx)
 				if err != nil {
 					return err
 				}
